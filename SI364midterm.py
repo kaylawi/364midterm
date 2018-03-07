@@ -20,6 +20,8 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://localhost/kaylawiSI364midt
 
 ## All app.config values
 
+app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 ## Statements for db setup (and manager setup if using Manager)
 db = SQLAlchemy(app)
@@ -63,7 +65,6 @@ class Name(db.Model):
         return "{} (ID: {})".format(self.name, self.id)
 
 
-
 ###################
 ###### FORMS ######
 ###################
@@ -76,6 +77,33 @@ class DirectorTitleForm(FlaskForm):
     title_name = StringField("Enter the name of the movie: ", validators=[Required(),Length(min=1,max=280)])
     director_name = StringField("Enter the name of the director: ", validators=[Required(),Length(min=1,max=280)])
     submit = SubmitField('Submit')
+
+    ## Custom Validation 
+
+
+    def validate_title(self,field):
+
+        if field.data[0] == "@" :
+            raise ValidationError("Not a valid title")
+
+        if field.data[0] == "!" :
+            raise ValidationError("Not a valid title")
+
+        if len(field.data.split()) < 1:
+            raise ValidationError("Not a valid title")
+
+        if field.data[0] == "." :
+            raise ValidationError("Not a valid title")
+
+
+    def validate_name(self,field):
+
+        if field.data[0] == "@":
+            raise ValidationError("Not a valid name")
+       
+        if len(field.data.split()) < 1: 
+            raise ValidationError("Not a valid name")
+
 #######################
 ###### VIEW FXNS ######
 #######################
@@ -111,7 +139,50 @@ def internal_server_error(e):
     return render_template('500.html'), 500
 
 
+@app.route('/', methods=['GET','POST'])
+def index():
+    form = DirectorTitleForm()
 
+    # Find out if there's already a director with the entered name
+    # if there is, save it in a variable: director
+    # If not, then create one and add it to the database 
+
+    d = Director.query.filter_by(directorname = director_name).first()
+    if d:
+        director = d
+    else: 
+        d = Director(directorname=director_name)  #addmore 
+        db.session.add(d)
+        db.session.commit()
+
+    # If director already exist in database with this name
+    # Then flash a message about the name already existing
+    # And redirect to the list of directors 
+
+    t = Title.query.filter_by(directorname = director_name, director_id = d.id).first() ## need to edit 
+    if t:
+        flash("Director exists")
+        return redirect(url_for("  ")) ## need to create templates
+
+    ## Render the template all_titles.html
+
+    @app.route('/all_directors')
+    def see_all_directors():
+        all_directors = Director.query.all() 
+        return render_template('all_directors.html') ## Complete this section 
+
+
+    ## Render the template all_directors.html
+
+    @app.route('all_titles')
+    def see_all_titles():
+        all_titles = Title.query.all()
+
+        return render_template('all_titles.html') ## Complete this section
+
+if __name__ == '__main__':
+    db.create_all() # Will create any defined models when you run the application
+    app.run(use_reloader=True,debug=True) # The usual
 
 ## Code to run the application...
 
