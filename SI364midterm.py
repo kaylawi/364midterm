@@ -7,10 +7,11 @@
 import os
 from flask import Flask, render_template, session, redirect, url_for, flash, request
 from flask_wtf import FlaskForm
-from wtforms import StringField # Note that you may need to import more here! Check out examples that do what you want to figure out what.
-from wtforms.validators import Required # Here, too
+from wtforms import StringField, SubmitField # Note that you may need to import more here! Check out examples that do what you want to figure out what.
+from wtforms.validators import Required, Length # Here, too
 from flask_sqlalchemy import SQLAlchemy
 import omdb 
+from flask_script import Manager 
 
 ## App setup code
 app = Flask(__name__)
@@ -20,11 +21,17 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://localhost/kaylawiSI364midt
 
 ## All app.config values
 
+app.config['SECRET_KEY'] = 'API_info.key'
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Set up Flask debug stuff
+
+manager = Manager(app)
+
 ## Statements for db setup (and manager setup if using Manager)
-db = SQLAlchemy(app)
+
+db = SQLAlchemy(app) # For database use 
 
 
 ######################################
@@ -38,22 +45,28 @@ db = SQLAlchemy(app)
 ##### MODELS #####
 ##################
 
+## Set up association Table between Director and Title Finish it later ##
+
+
 class Director(db.Model):
     __tablename__ = "directors"
     id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(280))
     director = db.Column(db.String(64))
 
     def __repr__(self):
-        return "{} (ID: {})". format(self.director,self.id)
+        return "{0} (ID: {1})". format(self.text,self.id)
 
 
 class Title(db.Model):
     __tablename__ = "titles"
     id = db.Column(db.Integer, primary_key = True)
     title = db.Column(db.String(64))
+    director_id = db.Column(db.Integer, db.ForeignKey('director.id'))
+    directors = db.relationship('Director', backref = 'Title') # This shows relationship between directors and titles 
 
     def __repr__(self):
-        return "{} (ID: {})".format(self.title, self.id)
+        return "{0} (ID: {1})".format(self.title, self.id)
 
 
 class Name(db.Model):
@@ -70,8 +83,8 @@ class Name(db.Model):
 ###################
 
 class NameForm(FlaskForm):
-    name = StringField("Please enter your name.",validators=[Required()])
-    submit = SubmitField()
+    name = StringField("Please enter your name:" ,validators=[Required(),Length(min=1,max=280)])
+    submit = SubmitField('Submit')
 
 class DirectorTitleForm(FlaskForm):
     title_name = StringField("Enter the name of the movie: ", validators=[Required(),Length(min=1,max=280)])
