@@ -11,7 +11,6 @@ from wtforms import StringField, SubmitField # Note that you may need to import 
 from wtforms.validators import Required, Length # Here, too
 from flask_sqlalchemy import SQLAlchemy
 import omdb 
-from flask_script import Manager 
 
 ## App setup code
 app = Flask(__name__)
@@ -21,13 +20,10 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://localhost/kaylawiSI364midt
 
 ## All app.config values
 
-app.config['SECRET_KEY'] = 'API_info.key'
+app.config['SECRET_KEY'] = 'hard to guess string from si364'
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Set up Flask debug stuff
-
-manager = Manager(app)
 
 ## Statements for db setup (and manager setup if using Manager)
 
@@ -45,8 +41,9 @@ db = SQLAlchemy(app) # For database use
 ##### MODELS #####
 ##################
 
-## Set up association Table between Director and Title Finish it later ##
+# Set up association Table between Director and Title Finish it later ##
 
+collections = db.Table('collections', db.Column('director_id', db.Integer, db.ForeignKey('directors_id')),db.Column('title_id', db.Integer, db.ForeignKey('titles.id')))
 
 class Director(db.Model):
     __tablename__ = "directors"
@@ -151,10 +148,28 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('500.html'), 500
 
+## Main Route 
 
 @app.route('/', methods=['GET','POST'])
 def index():
+
     form = DirectorTitleForm()
+
+    # Get number of Directors 
+
+    numberofdirectors = len(Director.query.all())
+
+    # Get number of Titles 
+
+    numberoftitles = len(Title.query.all())
+
+    #If form was posted to this route,
+    #Get data from the form 
+
+    if form.validate_on_submit():
+        director_name = form.directorname.data
+        txt = form.text.data
+        title_name = form.titlename.data 
 
     # Find out if there's already a director with the entered name
     # if there is, save it in a variable: director
@@ -175,14 +190,33 @@ def index():
     t = Title.query.filter_by(directorname = director_name, director_id = d.id).first() ## need to edit 
     if t:
         flash("Director exists")
-        return redirect(url_for("  ")) ## need to create templates
+        return redirect(url_for("see_all_titles")) 
+
+    else:
+        t = Title(text = txt, director_id = d.id)
+        db.session.add(t)
+        db.session.commit()
+        flash("title added successfully")
+        return redirect(url_for('base.html'))
+
+
+        errors = [v for v in form.errors.values()]
+        if len(errors) > 0:
+            flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
+        return render_template('base.html', form = form, num_titles=numberoftitles)
 
     ## Render the template all_titles.html
 
     @app.route('/all_directors')
     def see_all_directors():
         all_directors = Director.query.all() 
-        return render_template('all_directors.html') ## Complete this section 
+        numberoftitles = []
+
+        for i in all_directors:
+            d = Director.query.filter_by(id = i.director_id).first()
+            numberofdirectors.append([i.text,d.directorname])
+
+        return render_template('all_directors.html', all_directors=numberofdrectors) 
 
 
     ## Render the template all_directors.html
@@ -190,8 +224,29 @@ def index():
     @app.route('all_titles')
     def see_all_titles():
         all_titles = Title.query.all()
+        return render_template('all_titles.html', titles=all_titles) 
 
-        return render_template('all_titles.html') ## Complete this section
+
+    @app.route('/longest_title')
+    def longest_title():
+        all_titles = Title.query.all()
+        title=[]
+        
+        for i in all_titles:
+            title.append([i, len(i.text.replace(" ",""))])
+            title.sort(key=lambda i: (i[1],i[0].text),reverse=True)
+            director= Director.query.filter_by(id = title[0][0].director_id.first())
+
+        return render_template('longest_title.html',title=title[0][0].text) ## -- change up stuff after it --- username=user.username,display_name=user.display_name)
+
+
+    @app.route('/directorinfo', methods = ['GET'])
+    def info():
+        if request.method == 'GET':
+           result = request.args['director'] #going inside of the dictionary to get the director infor(string)
+           url = request.get(API_info.format(results))
+           data = url.json()['results']
+           return render_template('director_info.html' objects = data)
 
 if __name__ == '__main__':
     db.create_all() # Will create any defined models when you run the application
