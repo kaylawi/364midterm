@@ -7,10 +7,12 @@
 import os
 from flask import Flask, render_template, session, redirect, url_for, flash, request
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField # Note that you may need to import more here! Check out examples that do what you want to figure out what.
+from wtforms import StringField, SubmitField,ValidationError # Note that you may need to import more here! Check out examples that do what you want to figure out what.
 from wtforms.validators import Required, Length # Here, too
 from flask_sqlalchemy import SQLAlchemy
 import omdb 
+import json
+import requests 
 
 ## App setup code
 app = Flask(__name__)
@@ -43,27 +45,25 @@ db = SQLAlchemy(app) # For database use
 
 # Set up association Table between Director and Title Finish it later ##
 
-collections = db.Table('collections', db.Column('director_id', db.Integer, db.ForeignKey('directors_id')),db.Column('title_id', db.Integer, db.ForeignKey('titles.id')))
+#collections = db.Table('collections', db.Column('director_id', db.Integer, db.ForeignKey('directors_id')),db.Column('title_id', db.Integer, db.ForeignKey('titles.id')))
 
 class Director(db.Model):
-    __tablename__ = "directors"
+    __tablename__ = "director"
     id = db.Column(db.Integer, primary_key=True)
-    text = db.Column(db.String(280))
     director = db.Column(db.String(64))
 
     def __repr__(self):
-        return "{0} (ID: {1})". format(self.text,self.id)
+        return "{0} (ID: {1})". format(self.id,self.director)
 
 
 class Title(db.Model):
     __tablename__ = "titles"
     id = db.Column(db.Integer, primary_key = True)
     title = db.Column(db.String(64))
-    director_id = db.Column(db.Integer, db.ForeignKey('director.id'))
     directors = db.relationship('Director', backref = 'Title') # This shows relationship between directors and titles 
 
     def __repr__(self):
-        return "{0} (ID: {1})".format(self.title, self.id)
+        return "{0} (ID: {1})".format(self.id, self.title, self.directors)
 
 
 class Name(db.Model):
@@ -88,8 +88,15 @@ class DirectorTitleForm(FlaskForm):
     director_name = StringField("Enter the name of the director: ", validators=[Required(),Length(min=1,max=280)])
     submit = SubmitField('Submit')
 
-    ## Custom Validation 
+@app.route('/director_result', methods = ['POST'])
+def result():
+    form = DirectorTitleForm(request.form)
+    if request.method == 'POST' and form.validate_on_submit():
+        director = form.director.data
 
+    return render_template('all_directors.html', form = form)
+
+    ## Custom Validation 
 
     def validate_title(self,field):
 
@@ -246,7 +253,7 @@ def index():
            result = request.args['director'] #going inside of the dictionary to get the director infor(string)
            url = request.get(API_info.format(results))
            data = url.json()['results']
-           return render_template('director_info.html' objects = data)
+           return render_template('director_info.html',objects = data)
 
 if __name__ == '__main__':
     db.create_all() # Will create any defined models when you run the application
