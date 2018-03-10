@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<ul>
+{% for ti in titles %}
+  <li>{{ ti.title }}</li><br>
+ <br><br>
+{% endfor %}
+</ul>
+
+{% if not all_titles %}
+    There are no saved titles to show.
+{% endif %}
+
+
+<div>
+{% for message in get_flashed_messages() %}
+    <strong>*** {{ message }} ***</strong>
+{% endfor %}
+</div>
+
+{% endblock %}

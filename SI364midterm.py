@@ -43,10 +43,6 @@ db = SQLAlchemy(app) # For database use
 ##### MODELS #####
 ##################
 
-# Set up association Table between Director and Title Finish it later ##
-
-#collections = db.Table('collections', db.Column('director_id', db.Integer, db.ForeignKey('directors_id')),db.Column('title_id', db.Integer, db.ForeignKey('titles.id')))
-
 class Director(db.Model):
     __tablename__ = "director"
     id = db.Column(db.Integer, primary_key=True)
@@ -218,10 +214,6 @@ def index():
     def see_all_directors():
         all_directors = Director.query.all() 
         numberoftitles = []
-
-        for i in all_directors:
-            d = Director.query.filter_by(id = i.director_id).first()
-            numberofdirectors.append([i.text,d.directorname])
 
         return render_template('all_directors.html', all_directors=numberofdrectors) 
 
