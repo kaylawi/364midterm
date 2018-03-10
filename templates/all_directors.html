@@ -1,6 +1,11 @@
-{% extends 'base.html' %}
+
 
 {% block content %}
+<form action="{{ url_for('result')}}" method="POST">
+    {{ form.director_name.label() }}{{ form.director_name() }}<br>
+    {{ form.submit() }}
+</form>
+
 <ul>
 {% for di in directors %}
   <li>{{ di.director }}</li><br>

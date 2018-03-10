@@ -43,14 +43,6 @@ db = SQLAlchemy(app) # For database use
 ##### MODELS #####
 ##################
 
-class Director(db.Model):
-    __tablename__ = "director"
-    id = db.Column(db.Integer, primary_key=True)
-    director = db.Column(db.String(64))
-
-    def __repr__(self):
-        return "{0} (ID: {1})". format(self.id,self.director)
-
 
 class Title(db.Model):
     __tablename__ = "titles"
@@ -61,6 +53,12 @@ class Title(db.Model):
     def __repr__(self):
         return "{0} (ID: {1})".format(self.id, self.title, self.directors)
 
+class Id(db.Model):
+    __tablename__ = "ids"
+    id = db.Column(db.Integer, primary_key=True)
+  
+    def __repr__(self):
+        return "{0} (ID: {1})". format(self.id)
 
 class Name(db.Model):
     __tablename__ = "names"
@@ -79,22 +77,23 @@ class NameForm(FlaskForm):
     name = StringField("Please enter your name:" ,validators=[Required(),Length(min=1,max=280)])
     submit = SubmitField('Submit')
 
+    def validate_name(self,field):
+
+        if field.data[0] == "@":
+            raise ValidationError("Not a valid name")
+       
+        if len(field.data.split()) < 1: 
+            raise ValidationError("Not a valid name")
+
 class DirectorTitleForm(FlaskForm):
     title_name = StringField("Enter the name of the movie: ", validators=[Required(),Length(min=1,max=280)])
     director_name = StringField("Enter the name of the director: ", validators=[Required(),Length(min=1,max=280)])
     submit = SubmitField('Submit')
 
-@app.route('/director_result', methods = ['POST'])
-def result():
-    form = DirectorTitleForm(request.form)
-    if request.method == 'POST' and form.validate_on_submit():
-        director = form.director.data
-
-    return render_template('all_directors.html', form = form)
 
     ## Custom Validation 
 
-    def validate_title(self,field):
+    def validate_title_name(self,field):
 
         if field.data[0] == "@" :
             raise ValidationError("Not a valid title")
@@ -108,14 +107,6 @@ def result():
         if field.data[0] == "." :
             raise ValidationError("Not a valid title")
 
-
-    def validate_name(self,field):
-
-        if field.data[0] == "@":
-            raise ValidationError("Not a valid name")
-       
-        if len(field.data.split()) < 1: 
-            raise ValidationError("Not a valid name")
 
 #######################
 ###### VIEW FXNS ######
@@ -135,7 +126,7 @@ def home():
 @app.route('/names')
 def all_names():
     names = Name.query.all()
-    return render_template('name_example.html',names=names)
+    return render_template('name_example.html', names=names)
 
 ###################################
 ##### Routes & view functions #####
@@ -151,101 +142,26 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('500.html'), 500
 
-## Main Route 
 
-@app.route('/', methods=['GET','POST'])
+## Initialize form 
+
+@app.route('/', methods=['GET', 'POST'])
 def index():
-
-    form = DirectorTitleForm()
-
-    # Get number of Directors 
-
-    numberofdirectors = len(Director.query.all())
-
-    # Get number of Titles 
-
-    numberoftitles = len(Title.query.all())
-
-    #If form was posted to this route,
-    #Get data from the form 
+    form = TitleIdForm()
 
     if form.validate_on_submit():
-        director_name = form.directorname.data
-        txt = form.text.data
-        title_name = form.titlename.data 
-
-    # Find out if there's already a director with the entered name
-    # if there is, save it in a variable: director
-    # If not, then create one and add it to the database 
-
-    d = Director.query.filter_by(directorname = director_name).first()
-    if d:
-        director = d
-    else: 
-        d = Director(directorname=director_name)  #addmore 
-        db.session.add(d)
-        db.session.commit()
-
-    # If director already exist in database with this name
-    # Then flash a message about the name already existing
-    # And redirect to the list of directors 
-
-    t = Title.query.filter_by(directorname = director_name, director_id = d.id).first() ## need to edit 
-    if t:
-        flash("Director exists")
-        return redirect(url_for("see_all_titles")) 
-
-    else:
-        t = Title(text = txt, director_id = d.id)
-        db.session.add(t)
-        db.session.commit()
-        flash("title added successfully")
-        return redirect(url_for('base.html'))
+        movie_titles = form.titles.data
+        movie_directors = form.directors.data
+    
 
 
-        errors = [v for v in form.errors.values()]
-        if len(errors) > 0:
-            flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
-        return render_template('base.html', form = form, num_titles=numberoftitles)
-
-    ## Render the template all_titles.html
-
-    @app.route('/all_directors')
-    def see_all_directors():
-        all_directors = Director.query.all() 
-        numberoftitles = []
-
-        return render_template('all_directors.html', all_directors=numberofdrectors) 
+@app.route('/all_directors')
+def see_all_directors():
+    if request.method == 'POST' and form.validate_on_submit():
 
 
-    ## Render the template all_directors.html
-
-    @app.route('all_titles')
-    def see_all_titles():
-        all_titles = Title.query.all()
-        return render_template('all_titles.html', titles=all_titles) 
-
-
-    @app.route('/longest_title')
-    def longest_title():
-        all_titles = Title.query.all()
-        title=[]
-        
-        for i in all_titles:
-            title.append([i, len(i.text.replace(" ",""))])
-            title.sort(key=lambda i: (i[1],i[0].text),reverse=True)
-            director= Director.query.filter_by(id = title[0][0].director_id.first())
-
-        return render_template('longest_title.html',title=title[0][0].text) ## -- change up stuff after it --- username=user.username,display_name=user.display_name)
-
-
-    @app.route('/directorinfo', methods = ['GET'])
-    def info():
-        if request.method == 'GET':
-           result = request.args['director'] #going inside of the dictionary to get the director infor(string)
-           url = request.get(API_info.format(results))
-           data = url.json()['results']
-           return render_template('director_info.html',objects = data)
+@app.route('/all_titles')
+def see_all_titles():
 
 if __name__ == '__main__':
     db.create_all() # Will create any defined models when you run the application
