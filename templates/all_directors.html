@@ -1,13 +1,13 @@
 
 
-{% block content %}
-<form action="{{ url_for('result')}}" method="POST">
+<!-- {% block content %}
+<form action="{{ url_for('results)}}" method="POST">
     {{ form.director_name.label() }}{{ form.director_name() }}<br>
     {{ form.submit() }}
 </form>
 
 <ul>
-{% for di in directors %}
+{% for di in all_directors %}
   <li>{{ di.director }}</li><br>
  <br><br>
 {% endfor %}
@@ -23,5 +23,15 @@
     <strong>*** {{ message }} ***</strong>
 {% endfor %}
 </div>
+
+{% endblock %}
+ -->
+
+{% block content %}
+<form action="{{ url_for('index')}}" method="POST">
+    {{ form.director_name.label() }}{{ form.director_name() }}<br>
+    {{ form.submit() }}
+</form>
+
 
 {% endblock %}

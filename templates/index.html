@@ -1,0 +1,20 @@
+<div class="page-header">
+    <h1>{% if director_name %}{{ director_name }}{% else %}0{% endif %} directors saved. </h1>
+    <p><a href="{{url_for('see_all_directors') }}"> See all directors.</a></p>
+  
+</div>
+
+<div>
+<form method="POST">
+	{{ form.hidden_tag() }}
+	{{ form.director.label }} {{ form.director() }}
+	{{ form.title.label }} {{ form.title() }}
+	{{ form.submit() }}
+</form>
+
+
+<div>
+{% for message in get_flashed_messages() %}
+{{ message }}
+{% endfor %}
+</div>

@@ -41,7 +41,7 @@ def get_or_create_titles(db_session,title_name):
     title = db.session.query(Title).filter_by(title=title_name).first()
     if title:
         flash('title exists')
-        return redirect(url_for('see_all_title'))
+        return redirect(url_for('see_all_titles'))
         #return title
     else:
         title = Title(title=title_name)
@@ -50,17 +50,17 @@ def get_or_create_titles(db_session,title_name):
         return redirect(url_for('index'))
         #return title
 
-def get_or_create_id(db_session, id_name):
-    id = db.session.query(Id).filter_by(id = id_name).first()
+def get_or_create_director(db_session, id_name):
+    id = db.session.query(Director).filter_by(director = director_name).first()
     if id:
-        flash("id exists")
-        return redirect(url_for('see_all_id'))
+        flash("director exists")
+        return redirect(url_for('see_all_director'))
         #return id
     else:
-        id = Id(id = id_name)
-        db_session.add(id)
+        director = Director(director = director_name)
+        db_session.add(director)
         db_session.commit
-        flash('id added successfully')
+        flash('director added successfully')
         return redirect(url_for('index'))
         #return id
 
@@ -73,17 +73,18 @@ class Title(db.Model):
     __tablename__ = "titles"
     id = db.Column(db.Integer, primary_key = True)
     title = db.Column(db.String(64))
-    directors = db.relationship('ids', backref = 'Title') # This shows relationship between directors and titles 
+    directors = db.relationship('Director', backref = 'Title') # This shows relationship between directors and titles 
 
     def __repr__(self):
         return "{0} (ID: {1})".format(self.id, self.title, self.directors)
 
-class Id(db.Model):
-    __tablename__ = "ids"
+class Director(db.Model):
+    __tablename__="directors"
     id = db.Column(db.Integer, primary_key=True)
-  
-    def __repr__(self):
-        return "{0} (ID: {1})". format(self.id)
+    director_name = db.Column(db.String(64))
+    title_id = db.Column(db.Integer, db.ForeignKey("titles.id"))
+    def __rept__(self):
+        return "{} (ID: {})".format(self.id, self.director_name, self.title_id)
 
 class Name(db.Model):
     __tablename__ = "names"
@@ -110,9 +111,9 @@ class NameForm(FlaskForm):
         if len(field.data.split()) < 1: 
             raise ValidationError("Not a valid name")
 
-class TitleIdForm(FlaskForm):
+class DirectorTitleForm(FlaskForm):
     title_name = StringField("Enter the name of the movie: ", validators=[Required(),Length(min=1,max=280)])
-    id_number = IntegerField("Enter the id of the movie: ", validators=[Required(),Length(min=1,max=280)])
+    director_name = StringField("Enter the name of the director: ", validators=[Required(),Length(min=1,max=280)])
     submit = SubmitField('Submit')
 
 
@@ -137,16 +138,16 @@ class TitleIdForm(FlaskForm):
 ###### VIEW FXNS ######
 #######################
 
-# @app.route('/')
-# def home():
-#     form = NameForm() # User should be able to enter name after name and each one will be saved, even if it's a duplicate! Sends data with GET
-#     if form.validate_on_submit():
-#         name = form.name.data
-#         newname = Name(name)
-#         db.session.add(newname)
-#         db.session.commit()
-#         return redirect(url_for('all_names'))
-#     return render_template('base.html',form=form)
+@app.route('/name_entry')
+def name_entry():
+    form = NameForm() # User should be able to enter name after name and each one will be saved, even if it's a duplicate! Sends data with GET
+    if form.validate_on_submit():
+        name = form.name.data
+        newname = Name(name)
+        db.session.add(newname)
+        db.session.commit()
+        return redirect(url_for('all_names'))
+    return render_template('base.html',form=form)
 
 @app.route('/names')
 def all_names():
@@ -169,31 +170,30 @@ def internal_server_error(e):
 
 
 ## Initialize form 
-
+ 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    form = TitleIdForm()
-    if form.validate_on_submit():
+    form = DirectorTitleForm(request.form)
+    if request.method == 'POST' and form.validate_on_submit():
         movie_titles = form.titles.data
         movie_directors = form.directors.data
-        simpleForm = TitleIdForm()
     return render_template('base.html',form = form)
 
-@app.route('/all_ids')
-def see_all_ids():
-    form = TitleIdForm(request.form)
+@app.route('/all_directors', methods=['GET','POST'])
+def see_all_directors():
+    form = DirectorTitleForm(request.form)
     if request.method == 'POST' and form.validate_on_submit():
-        id_number = form.id_number.data
-        SimpleForm = TitleIdForm()
-
-    return render_template('all_ids.html',form=form)
+       director_name = form.director_name.data
+       simpleForm = DirectorTitleForm()
+    return render_template('all_directors.html',form = form)
 
 @app.route('/all_titles', methods = ['GET'])
 def see_all_titles():
     if request.method == 'GET':
         result = request.args['title']
-        url = requests.get('http://www.omdbapi.com/?i=tt3896198&apikey=39a2a4a6?t='+result) 
-    return render_template('all_titles.html',titles = Title.query.all() )
+        url = requests.get('http://www.omdbapi.com/?apikey=145879ae&t='+result).json()
+
+    return render_template('all_titles.html', titles = Title.query.all() )
 
 
 if __name__ == '__main__':
