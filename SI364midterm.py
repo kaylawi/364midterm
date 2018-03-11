@@ -111,16 +111,19 @@ class NameForm(FlaskForm):
         if len(field.data.split()) < 1: 
             raise ValidationError("Not a valid name")
 
-class DirectorTitleForm(FlaskForm):
-    title_name = StringField("Enter the name of the movie: ", validators=[Required(),Length(min=1,max=280)])
+class DirectorForm(FlaskForm):
+    
     director_name = StringField("Enter the name of the director: ", validators=[Required(),Length(min=1,max=280)])
     submit = SubmitField('Submit')
 
+class TitleForm(FlaskForm):
+
+    title_name = StringField("Enter the name of the movie: ", validators=[Required(),Length(min=1,max=280)])
+    submit = SubmitField('Submit')
 
     ## Custom Validation 
 
     def validate_title_name(self,field):
-
         if field.data[0] == "@" :
             raise ValidationError("Not a valid title")
 
@@ -173,27 +176,40 @@ def internal_server_error(e):
  
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    form = DirectorTitleForm(request.form)
+    form = DirectorForm()
     if request.method == 'POST' and form.validate_on_submit():
-        movie_titles = form.titles.data
         movie_directors = form.directors.data
     return render_template('base.html',form = form)
 
 @app.route('/all_directors', methods=['GET','POST'])
 def see_all_directors():
-    form = DirectorTitleForm(request.form)
+    form = DirectorForm()
     if request.method == 'POST' and form.validate_on_submit():
        director_name = form.director_name.data
-       simpleForm = DirectorTitleForm()
+    
+    ## If the form did NOT validate / was not submitted
+
+    errors = [v for v in form.errors.values()]
+    if len(errors) > 0:
+        flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
     return render_template('all_directors.html',form = form)
 
-@app.route('/all_titles', methods = ['GET'])
+@app.route('/all_titles', methods = ['GET','POST'])
 def see_all_titles():
-    if request.method == 'GET':
+    form = TitleForm()
+    if request.method == 'GET' and form.validate_on_submit():
+        title_name = form.title_name.data
         result = request.args['title']
+        data = url.json()['results']
         url = requests.get('http://www.omdbapi.com/?apikey=145879ae&t='+result).json()
 
-    return render_template('all_titles.html', titles = Title.query.all() )
+
+    ## If the form did NOT validate / was not submitted
+
+    errors = [v for v in form.errors.values()]
+    if len(errors) > 0:
+        flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
+    return render_template('all_titles.html', form = form , titles = Title.query.all() )
 
 
 if __name__ == '__main__':

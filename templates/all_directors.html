@@ -1,7 +1,7 @@
+{% extends 'base.html' %}
 
-
-<!-- {% block content %}
-<form action="{{ url_for('results)}}" method="POST">
+{% block content %}
+<form action="{{ url_for('see_all_directors')}}" method="POST">
     {{ form.director_name.label() }}{{ form.director_name() }}<br>
     {{ form.submit() }}
 </form>
@@ -25,13 +25,5 @@
 </div>
 
 {% endblock %}
- -->
-
-{% block content %}
-<form action="{{ url_for('index')}}" method="POST">
-    {{ form.director_name.label() }}{{ form.director_name() }}<br>
-    {{ form.submit() }}
-</form>
 
 
-{% endblock %}

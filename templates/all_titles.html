@@ -1,6 +1,13 @@
 {% extends 'base.html' %}
 
 {% block content %}
+
+<form action ="{{url_for('see_all_titles')}}" methods="GET">
+	{{form.title_name.label() }}{{form.title_name() }}<br>
+	{{ form.submit() }}
+
+</form>
+
 <ul>
 {% for ti in titles %}
   <li>{{ ti.title }}</li><br>
