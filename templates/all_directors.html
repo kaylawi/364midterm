@@ -2,13 +2,14 @@
 
 {% block content %}
 <form action="{{ url_for('see_all_directors')}}" method="POST">
+	{{ form.hidden_tag() }}
     {{ form.director_name.label() }}{{ form.director_name() }}<br>
     {{ form.submit() }}
 </form>
 
 <ul>
 {% for di in all_directors %}
-  <li>{{ di.director }}</li><br>
+  <li>{{ di.director_name }}</li><br>
  <br><br>
 {% endfor %}
 </ul>

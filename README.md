@@ -44,4 +44,5 @@ These could be in the same template, and could be 1 of the 2 additional template
 http://local:5000 --> index.html 
 http://local:5000/all_directors --> all_directors.html
 http://local:5000/all_titles --> all_titles.html
+http://local:5000/names --> name_example.html 
 

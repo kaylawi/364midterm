@@ -38,34 +38,35 @@ db = SQLAlchemy(app) # For database use
 
 
 def get_or_create_titles(db_session,title_name):
-    title = db.session.query(Title).filter_by(title=title_name).first()
-    url = omdb.get('http://www.omdbapi.com/?apikey=145879ae&t={}'.format(title))
-    req = requests.get(url)
-    txt = req.json()
-    title=txt['Title']
+    t = db.session.query(Title).filter_by(title=title_name).first()
+    url = 'http://www.omdbapi.com/?apikey=145879ae&t={}'.format(title_name)
+    req = requests.get(url).json()['Title']
+    print(req)
 
-    if not title:
-        title = Title(title = title)
-        db.session.add(title)
+    if not t:
+        t = Title(title = req)
+        db.session.add(t)
         db.session.commit()
         flash("Movie successfully added")
 
     else:
       flash("Movie already exist")
 
-def get_or_create_director(db_session, id_name):
-    id = db.session.query(Director).filter_by(director = director_name).first()
-    if id:
+      return redirect(url_for('see_all_titles'))
+
+def get_or_create_director(db_session, director_name):
+    d = db.session.query(Director).filter_by(director_name = director_name).first()
+    if d:
         flash("director exists")
-        return redirect(url_for('see_all_director'))
-        #return id
+        return redirect(url_for('see_all_directors'))
+       
     else:
-        director = Director(director = director_name)
+        director = Director(director_name = director_name)
         db_session.add(director)
         db_session.commit
         flash('director added successfully')
         return redirect(url_for('index'))
-        #return id
+    
 
 ##################
 ##### MODELS #####
@@ -144,21 +145,15 @@ class TitleForm(FlaskForm):
 ###### VIEW FXNS ######
 #######################
 
-@app.route('/name_entry')
-def name_entry():
+@app.route('/names')
+def names():
     form = NameForm() # User should be able to enter name after name and each one will be saved, even if it's a duplicate! Sends data with GET
-    if form.validate_on_submit():
-        name = form.name.data
-        newname = Name(name)
+    if request.args:
+        name = request.args['name']
+        newname = Name(name=name)
         db.session.add(newname)
         db.session.commit()
-        return redirect(url_for('all_names'))
-    return render_template('base.html',form=form)
-
-@app.route('/names')
-def all_names():
-    names = Name.query.all()
-    return render_template('name_example.html', names=names)
+    return render_template('name_example.html', form=form, names=Name.query.all())
 
 ###################################
 ##### Routes & view functions #####
@@ -189,9 +184,7 @@ def see_all_directors():
     form = DirectorForm()
     if request.method == 'POST' and form.validate_on_submit():
        director_name = form.director_name.data
-       results = request.args['director']
-       data = url.json()['results']
-       url = omdb.get('http://www.omdbapi.com/?apikey=145879ae&t='+result).json()
+       get_or_create_director(db.session, director_name)
 
     ## If the form did NOT validate / was not submitted
 
@@ -199,16 +192,14 @@ def see_all_directors():
     if len(errors) > 0:
         flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
 
-    return render_template('all_directors.html',form = form)
+    return render_template('all_directors.html',form = form, all_directors=Director.query.all())
 
 @app.route('/all_titles', methods = ['GET','POST'])
 def see_all_titles():
     form = TitleForm()
-    if request.method == 'GET' and form.validate_on_submit():
-        title_name = form.title_name.data
-        results = request.args['title']
-        data = url.json()['results']
-        url = requests.get('http://www.omdbapi.com/?apikey=145879ae&t='+result).json()
+    if request.args:
+        title_name = request.args['title_name']
+        get_or_create_titles(db.session, title_name)
 
     ## If the form did NOT validate / was not submitted
 
@@ -216,7 +207,7 @@ def see_all_titles():
     if len(errors) > 0:
         flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
 
-    return render_template('all_titles.html', form = form , titles = Title.query.all() )
+    return render_template('all_titles.html', form = form, all_titles = Title.query.all() )
 
 
 if __name__ == '__main__':

@@ -1,12 +1,28 @@
+{% extends 'base.html' %}
 
+{% block content %}
+<form action="{{ url_for('names')}}" method="GET">
+	{{ form.hidden_tag() }}
+    {{ form.name.label() }}{{ form.name()}}<br>
+    {{ form.submit() }}
+</form>
 
-{% block content1 %}
-
-<h1>Names Visited</h1>
-
+<ul>
 {% for n in names %}
-    <p>{{ n }}</p>
+  <li>{{ n.name }}</li><br>
+ <br><br>
 {% endfor %}
+</ul>
 
+{% if not names %}
+    There are no saved names to show.
+{% endif %}
+
+
+<div>
+{% for message in get_flashed_messages() %}
+    <strong>*** {{ message }} ***</strong>
+{% endfor %}
+</div>
 
 {% endblock %}
