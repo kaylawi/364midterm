@@ -39,16 +39,19 @@ db = SQLAlchemy(app) # For database use
 
 def get_or_create_titles(db_session,title_name):
     title = db.session.query(Title).filter_by(title=title_name).first()
-    if title:
-        flash('title exists')
-        return redirect(url_for('see_all_titles'))
-        #return title
+    url = omdb.get('http://www.omdbapi.com/?apikey=145879ae&t={}'.format(title))
+    req = requests.get(url)
+    txt = req.json()
+    title=txt['Title']
+
+    if not title:
+        title = Title(title = title)
+        db.session.add(title)
+        db.session.commit()
+        flash("Movie successfully added")
+
     else:
-        title = Title(title=title_name)
-        db_session.add(title)
-        db_session.commit
-        return redirect(url_for('index'))
-        #return title
+      flash("Movie already exist")
 
 def get_or_create_director(db_session, id_name):
     id = db.session.query(Director).filter_by(director = director_name).first()
@@ -186,12 +189,16 @@ def see_all_directors():
     form = DirectorForm()
     if request.method == 'POST' and form.validate_on_submit():
        director_name = form.director_name.data
-    
+       results = request.args['director']
+       data = url.json()['results']
+       url = omdb.get('http://www.omdbapi.com/?apikey=145879ae&t='+result).json()
+
     ## If the form did NOT validate / was not submitted
 
     errors = [v for v in form.errors.values()]
     if len(errors) > 0:
         flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
+
     return render_template('all_directors.html',form = form)
 
 @app.route('/all_titles', methods = ['GET','POST'])
@@ -199,16 +206,16 @@ def see_all_titles():
     form = TitleForm()
     if request.method == 'GET' and form.validate_on_submit():
         title_name = form.title_name.data
-        result = request.args['title']
+        results = request.args['title']
         data = url.json()['results']
         url = requests.get('http://www.omdbapi.com/?apikey=145879ae&t='+result).json()
-
 
     ## If the form did NOT validate / was not submitted
 
     errors = [v for v in form.errors.values()]
     if len(errors) > 0:
         flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
+
     return render_template('all_titles.html', form = form , titles = Title.query.all() )
 
 
